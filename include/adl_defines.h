@@ -29,7 +29,7 @@
 /// \li Enumerations for the ADLDisplayInfo structure
 /// \li Maximum limits
 ///
-
+//这个文件包含了所有的ADL定义结构体
 #ifndef ADL_DEFINES_H_
 #define ADL_DEFINES_H_
 
@@ -47,19 +47,19 @@
 /// Defines ADL_FALSE
 #define ADL_FALSE        0
 
-/// Defines the maximum string length
+/// Defines the maximum string length //定义ADL最长字符串大小为4MB
 #define ADL_MAX_CHAR                                    4096
-/// Defines the maximum string length
+/// Defines the maximum string length 定义最长路径字符串，大小为256个字符
 #define ADL_MAX_PATH                                    256
-/// Defines the maximum number of supported adapters
+/// Defines the maximum number of supported adapters //定义支持最长容器数量
 #define ADL_MAX_ADAPTERS                               250
-/// Defines the maxumum number of supported displays
+/// Defines the maxumum number of supported displays //定义最多显示数量
 #define ADL_MAX_DISPLAYS                                150
-/// Defines the maxumum string length for device name
+/// Defines the maxumum string length for device name  //定义设备名称最大字符串
 #define ADL_MAX_DEVICENAME                                32
-/// Defines for all adapters
+/// Defines for all adapters  //定义原始指针下标
 #define ADL_ADAPTER_INDEX_ALL                            -1
-///    Defines APIs with iOption none
+///    Defines APIs with iOption none //定义api option  为 none
 #define ADL_MAIN_API_OPTION_NONE                        0
 // @}
 
@@ -141,7 +141,7 @@
 // @{
 /// Define Monitor display type
 #define ADL_DT_MONITOR                  0
-/// Define TV display type
+/// Define TV display type 
 #define ADL_DT_TELEVISION                    1
 /// Define LCD display type
 #define ADL_DT_LCD_PANEL                       2
@@ -290,7 +290,7 @@
 #define ADL_CUSTOMIZEDMODEFLAG_INTERLACED    (1 << 3)
 #define ADL_CUSTOMIZEDMODEFLAG_BASEMODE        (1 << 4)
 // @}
-
+//
 /// \defgroup define_ddcinfoflag Values used for DDCInfoFlag
 /// ulDDCInfoFlag field values used by the ADLDDCInfo structure
 // @{

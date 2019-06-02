@@ -474,13 +474,13 @@ typedef struct ADLDisplayDPMSTInfo
 typedef struct ADLDisplayMode
 {
 /// Vertical resolution (in pixels).
-   int  iPelsHeight;
+   int  iPelsHeight;//像素高
 /// Horizontal resolution (in pixels).
-   int  iPelsWidth;
+   int  iPelsWidth;//像素宽
 /// Color depth.
-   int  iBitsPerPel;
+   int  iBitsPerPel;//色彩深度
 /// Refresh rate.
-   int  iDisplayFrequency;
+   int  iDisplayFrequency;//刷新频率
 } ADLDisplayMode;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -489,14 +489,14 @@ typedef struct ADLDisplayMode
 /// This structure is used to store the detailed timing parameters.
 /// \nosubgrouping
 ////////////////////////////////////////////////////////////////////////////////////////////
-typedef struct ADLDetailedTiming
+typedef struct ADLDetailedTiming//详细时序标准
 {
 /// Size of the structure.
      int   iSize;
 /// Timing flags. \ref define_detailed_timing_flags
-     short sTimingFlags;
+     short sTimingFlags; //刷新时序标准方式
 /// Total width (columns).
-     short sHTotal;
+     short sHTotal; //
 /// Displayed width.
      short sHDisplay;
 /// Horizontal sync signal offset.
@@ -533,18 +533,18 @@ typedef struct ADLDetailedTiming
 ////////////////////////////////////////////////////////////////////////////////////////////
 typedef struct ADLDisplayModeInfo
 {
-/// Timing standard of the current mode. \ref define_modetiming_standard
-  int  iTimingStandard;
+/// Timing standard of the current mode. \ref define_modetiming_standard //当前模式的时间标准。 adl_defines.h 1161
+  int  iTimingStandard; //刷星时序标准
 /// Applicable timing standards for the current mode.
-  int  iPossibleStandard;
+  int  iPossibleStandard;//
 /// Refresh rate factor.
-  int  iRefreshRate;
+  int  iRefreshRate;//刷新率
 /// Num of pixels in a row.
-  int  iPelsWidth;
+  int  iPelsWidth; //像素宽度
 /// Num of pixels in a column.
-  int  iPelsHeight;
+  int  iPelsHeight;//像素高度
 /// Detailed timing parameters.
-  ADLDetailedTiming  sDetailedTiming;
+  ADLDetailedTiming  sDetailedTiming; //刷新时序细节
 } ADLDisplayModeInfo;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1282,32 +1282,33 @@ typedef struct ADLActivatableSource
 /// \nosubgrouping
 ////////////////////////////////////////////////////////////////////////////////////////////
 
+//ADL模型
 typedef struct ADLMode
 {
 /// Adapter index.
-    int iAdapterIndex;
+    int iAdapterIndex;//转接器下标
 /// Display IDs.
-    ADLDisplayID displayID;
-/// Screen position X coordinate.
-    int iXPos;
+    ADLDisplayID displayID; //显示的ID
+/// Screen position X coordinate. 
+    int iXPos;//屏幕x坐标
 /// Screen position Y coordinate.
-    int iYPos;
+    int iYPos;//屏幕y坐标
 /// Screen resolution Width.
-    int iXRes;
+    int iXRes;//屏幕x长度
 /// Screen resolution Height.
-    int iYRes;
+    int iYRes;//屏幕x宽度
 /// Screen Color Depth. E.g., 16, 32.
-    int iColourDepth;
+    int iColourDepth;//屏幕的色彩深度
 /// Screen refresh rate. Could be fractional E.g. 59.97
-    float fRefreshRate;
+    float fRefreshRate;//屏幕的刷新频率
 /// Screen orientation. E.g., 0, 90, 180, 270.
-    int iOrientation;
+    int iOrientation;//屏幕的旋转角度
 /// Vista mode flag indicating Progressive or Interlaced mode.
-    int iModeFlag;
+    int iModeFlag;//Vista模式标志指示逐行或隔行扫描模式。
 /// The bit mask identifying the number of bits this Mode is currently using. It is the sum of all the bit definitions defined in \ref define_displaymode
-    int iModeMask;
+    int iModeMask;//位掩码标识此模式当前使用的位数。 它是\ ref define_displaymode中定义的所有位定义的总和
 /// The bit mask identifying the display status. The detailed definition is in  \ref define_displaymode
-    int iModeValue;
+    int iModeValue;//位掩码标识显示状态。 详细定义在\ ref define_displaymode中
 } ADLMode, *LPADLMode;
 
 

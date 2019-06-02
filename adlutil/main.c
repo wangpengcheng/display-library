@@ -33,6 +33,7 @@
 #include <stdio.h>
 
 
+//定义个种函数内存分配
 typedef int ( *ADL_MAIN_CONTROL_CREATE )(ADL_MAIN_MALLOC_CALLBACK, int );
 typedef int ( *ADL_MAIN_CONTROL_DESTROY )();
 typedef int ( *ADL_ADAPTER_NUMBEROFADAPTERS_GET ) ( int* );
@@ -50,25 +51,26 @@ typedef int ( *ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET) (int iAdapterIndex, int i
 typedef int ( *ADL_ADAPTER_VIDEOBIOSINFO_GET )( int iAdapterIndex, ADLBiosInfo* lpBiosInfo );
 
 
-int OpenADL( void );
-void CloseADL( void );
-int GetValue( char * name, int * iValue, int line );
-int GetHex(  char * name, int * iValue, int line );
-int GetFloat(  char * name, float * fValue, int line );
-int AdlModeFromFile( LPADLMode  lpADLMode );
-int AdlModeToFile( LPADLMode lpADLMode );
-int AdlDisplayModeInfoFromFile(  int * lpAdapterIdx, int * lpDisplayIdx, ADLDisplayModeInfo * lpModeInfoList );
-int AdlDisplayModeInfoToFile( FILE * file, int iAdapterIdx, int iDisplayIdx, ADLDisplayModeInfo * lpModeInfoList );
-int AdlBiosInfoToFile( int iAdapterIndex, int iDisplayIndex, ADLBiosInfo * lpAdlBI );
-int DisplayErrorAndPause( char * sError );
-void ShowHelp(void);
+int OpenADL( void );//加载ADL
+void CloseADL( void );//关闭ADL
+int GetValue( char * name, int * iValue, int line );//获取相关值
+int GetHex(  char * name, int * iValue, int line );//
+int GetFloat(  char * name, float * fValue, int line );//获取浮点数
+int AdlModeFromFile( LPADLMode  lpADLMode );//配置文件加载ADL
+int AdlModeToFile( LPADLMode lpADLMode );//将ADL配置加载到文件
+int AdlDisplayModeInfoFromFile(  int * lpAdapterIdx, int * lpDisplayIdx, ADLDisplayModeInfo * lpModeInfoList );//从文件中加载显示信息
+int AdlDisplayModeInfoToFile( FILE * file, int iAdapterIdx, int iDisplayIdx, ADLDisplayModeInfo * lpModeInfoList );//将显示信息，加载到文件
+int AdlBiosInfoToFile( int iAdapterIndex, int iDisplayIndex, ADLBiosInfo * lpAdlBI );//ADLbiso信息加载到文件
+int DisplayErrorAndPause( char * sError );//显示错误和暂停
+void ShowHelp(void);//显示帮助信息
 
+//分配主要内存
 void* __stdcall ADL_Main_Memory_Alloc ( int iSize )
 {
     void* lpBuffer = malloc ( iSize );
     return lpBuffer;
 }
-
+//销毁主要内存
 void __stdcall ADL_Main_Memory_Free ( void** lpBuffer )
 {
     if ( NULL != *lpBuffer )
@@ -78,7 +80,18 @@ void __stdcall ADL_Main_Memory_Free ( void** lpBuffer )
     }
 }
 
-enum	COMMAND	{ NONE, GETALL, GETMODE, SETMODE, INFOOVER, SETOVER, GETLIST, GENERATE, BIOSINFO };
+//命令参数选项
+enum	COMMAND	{ 
+	NONE,//无 
+	GETALL, //获得所有
+	GETMODE, //获得模式
+	SETMODE, //设置模式
+	INFOOVER, //信息覆盖
+	SETOVER, //设置覆盖
+	GETLIST, //获取列表
+	GENERATE, //
+	BIOSINFO //nios信息
+};
 
 #if defined (LINUX)
 // Linux equivalent function of fopen_s
@@ -100,94 +113,97 @@ int fopen_s ( FILE ** file, const char *filename, const char *mode )
 #if defined (LINUX)
     void *hDLL;		// Handle to .so library
 #else
-    HINSTANCE hDLL;		// Handle to DLL
+    HINSTANCE hDLL;		// Handle to DLL //获取dll句柄
 #endif
 
-    LPAdapterInfo     lpAdapterInfo = NULL;
-    LPADLDisplayInfo  lpAdlDisplayInfo = NULL;
-	LPADLMode lpADLMode = NULL;
-	ADLDisplayModeInfo * lpModeInfoList = NULL;
+    LPAdapterInfo     lpAdapterInfo = NULL; //窗口
+    LPADLDisplayInfo  lpAdlDisplayInfo = NULL; //显示的基本信息
+	LPADLMode lpADLMode = NULL; //显示模式
+	ADLDisplayModeInfo * lpModeInfoList = NULL; //显示模式列表
 
-	FILE * file = NULL;
-	FILE * file2 = NULL;
-	char msg[ 128 ];
-	char err[ 128 ];
-	int sMsg = sizeof( msg );
-	int sErr = sizeof( err );
+	FILE * file = NULL;//文件，定义读入文件
+	FILE * file2 = NULL;//文件2
+	char msg[ 128 ];//信息字符串128
+	char err[ 128 ];//错误信息
+	int sMsg = sizeof( msg );//分配内存
+	int sErr = sizeof( err );//分配内存
 
 int main( int argc, char *argv[] )
 {
-    ADL_ADAPTER_NUMBEROFADAPTERS_GET ADL_Adapter_NumberOfAdapters_Get;
-    ADL_ADAPTER_ADAPTERINFO_GET      ADL_Adapter_AdapterInfo_Get;
-    ADL_ADAPTER_ACTIVE_GET           ADL_Adapter_Active_Get;
-    ADL_DISPLAY_DISPLAYINFO_GET      ADL_Display_DisplayInfo_Get;
-	ADL_DISPLAY_MODES_GET			ADL_Display_Modes_Get;
-	ADL_DISPLAY_MODES_SET			ADL_Display_Modes_Set;
-	ADL_DISPLAY_MODETIMINGOVERRIDE_GET	ADL_Display_ModeTimingOverride_Get;
-	ADL_DISPLAY_MODETIMINGOVERRIDE_SET	ADL_Display_ModeTimingOverride_Set;
-	ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET	ADL_Display_ModeTimingOverrideList_Get;
-	ADL_ADAPTER_VIDEOBIOSINFO_GET	ADL_Adapter_VideoBiosInfo_Get;
+    ADL_ADAPTER_NUMBEROFADAPTERS_GET ADL_Adapter_NumberOfAdapters_Get;//获取显示的数量
+    ADL_ADAPTER_ADAPTERINFO_GET      ADL_Adapter_AdapterInfo_Get;//获取显示接口
+    ADL_ADAPTER_ACTIVE_GET           ADL_Adapter_Active_Get;//获取活动的显示接口
+    ADL_DISPLAY_DISPLAYINFO_GET      ADL_Display_DisplayInfo_Get;//获取显示信息
+	ADL_DISPLAY_MODES_GET			ADL_Display_Modes_Get;//获取显示模式
+	ADL_DISPLAY_MODES_SET			ADL_Display_Modes_Set;//设置显示模式
+	ADL_DISPLAY_MODETIMINGOVERRIDE_GET	ADL_Display_ModeTimingOverride_Get;//此函数检索指定显示的显示模式时序覆盖信息。
+	ADL_DISPLAY_MODETIMINGOVERRIDE_SET	ADL_Display_ModeTimingOverride_Set; //设置显示模式
+	ADL_DISPLAY_MODETIMINGOVERRIDELIST_GET	ADL_Display_ModeTimingOverrideList_Get;//模型运行时重载队列
+	ADL_ADAPTER_VIDEOBIOSINFO_GET	ADL_Adapter_VideoBiosInfo_Get;//获取转接器的基本bios信息
 	
-    int  i, j, k;
-    int  ADL_Err;
-    int  iActive;
-    int  iNumberAdapters;
-    int  iAdapterIndex;
-    int  iDisplayIndex;
-    int  iNumDisplays;
-    int  iNumModes;
+    int  i, j, k; 
+    int  ADL_Err;//ADL 错误信息
+    int  iActive; //激活信息
+    int  iNumberAdapters;//转接器 数目
+    int  iAdapterIndex;//转接器索引下标
+    int  iDisplayIndex;//显示器下标
+    int  iNumDisplays;//显示的数目
+    int  iNumModes;//显示模式
 	int  iMaxNumOfOverrides = 100;		// Adjust this if necessary, but 100 seems enough.
-	int  lpNumOfOverrides;
-	int command = NONE;
+	int  lpNumOfOverrides; //lp重载数目
+	int command = NONE;//指令
 
-	ADLMode adlmode;
-	ADLDisplayMode AdlDM;
-	ADLDisplayModeInfo AdlDmi;
-	ADLBiosInfo AdlBI;
+	ADLMode adlmode; //adl模式
+	ADLDisplayMode AdlDM;//adl显示模式，包含，像素宽、高，色彩深度和刷新频率
+	ADLDisplayModeInfo AdlDmi;//ADL模式基本信息
+	ADLBiosInfo AdlBI;//ADLBIOS信息
 
-    memset ( &AdlDM,'\0', sizeof (AdlDM));
-	memset ( &AdlDmi,'\0', sizeof (AdlDmi));
+    memset ( &AdlDM,'\0', sizeof (AdlDM));//ADL显示信息分配内存
+	memset ( &AdlDmi,'\0', sizeof (AdlDmi));//ADL基本信息分配内存
 
-	if ( argc < 2 )
+	if ( argc < 2 )//参数判断，输入参数小于就直接返回帮助错误信息
 	{
-		ShowHelp();
+		ShowHelp();//显示帮助信息
 		return 0;
 	}
 
 	// Get the display mode
-	if ( 0 == strcmp (argv[ 1] , "get" ) )
+	if ( 0 == strcmp (argv[ 1] , "get" ) )//存在get指令
 	{
-		command = GETMODE;
-		if ( 3 == argc )
+		command = GETMODE;//初始化模式为get模式
+		if ( 3 == argc )//读取剩余参数，剩余参数为3
 		{
-			if ( fopen_s( &file, argv[ 2 ],"w") )
+			if ( fopen_s( &file, argv[ 2 ],"w") )//打开保存文件
 			{
 				printf( "Error openning file %s!\n", argv[2] );
 				return 0;
 			}
 		}
 		else
-			file = stdout;
+			file = stdout;//将标准输出，重定位到file文件
 	}
 	// Get the Override Info
+	//检查输入指令，获取重载信息
 	else if ( 0 == strcmp (argv[ 1] , "info" ) )
 	{
 		command = INFOOVER;
 		if ( 4 == argc )
 		{
-			if ( fopen_s( &file, argv[ 2 ],"r") )
+			if ( fopen_s( &file, argv[ 2 ],"r") )//打开相关文件
 			{
-				printf( "Error openning file %s!\n", argv[2] );
+				printf( "Error openning file %s!\n", argv[2] );//输出错误文件路径
 				return 0;
 			}
-			if ( fopen_s( &file2, argv[ 3 ],"w") )
+			if ( fopen_s( &file2, argv[ 3 ],"w") )//打开输出文件
 			{
 				printf( "Error openning file %s!\n", argv[3] );
 				return 0;
 			}
 		}
+		//如果输入参数为3
 		else if ( 3 == argc )
 		{
+			//打开文件地址
 			if ( fopen_s( &file, argv[ 2 ],"r") )
 			{
 				printf( "Error openning file %s!\n", argv[2] );
@@ -197,18 +213,19 @@ int main( int argc, char *argv[] )
 		}
 		else
 		{
+			//输入错误提示，输出帮助信息
 			printf( "The 'info' command requires at least one file\n" );
 			ShowHelp();
 			return 0;
 		}
 	}
 	// Get the Override LIst
-	else if ( 0 == strcmp (argv[ 1] , "list" ) )
+	else if ( 0 == strcmp (argv[ 1] , "list" ) )//获取重载列表
 	{
-		command = GETLIST;
+		command = GETLIST;//模式为获取列表
 		if ( 3 == argc )
 		{
-			if ( fopen_s( &file, argv[ 2 ],"w") )
+			if ( fopen_s( &file, argv[ 2 ],"w") )//打开输出文件
 			{
 				printf( "Error openning file %s!\n", argv[2] );
 				return 0;
@@ -833,7 +850,7 @@ int GetHex(  char * name, int * iValue, int line )
 		return ADL_ERR;
 	}
 }
-
+//获取浮点数
 int GetFloat(  char * name, float * fValue, int line )
 {
 	char sField[ 256 ];
@@ -848,8 +865,10 @@ int GetFloat(  char * name, float * fValue, int line )
 }
 
 // Initialize ADL
+//开启并初始化ADL
 int OpenADL()
 {
+	//句柄创建指针
     ADL_MAIN_CONTROL_CREATE          ADL_Main_Control_Create;
 	int ADL_Err = ADL_ERR;
 
@@ -858,6 +877,7 @@ int OpenADL()
     sprintf(sztemp,"libatiadlxx.so");
     hDLL = dlopen( sztemp, RTLD_LAZY|RTLD_GLOBAL);
 #else
+	//加载dll
     hDLL = LoadLibrary( "atiadlxx.dll" );
     if (hDLL == NULL)
     {
@@ -869,11 +889,14 @@ int OpenADL()
 
 	if (hDLL != NULL)
     {
+		//根据字节对齐查找函数
         ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE)GetProcAddress(hDLL,"ADL_Main_Control_Create");
-        if ( NULL != ADL_Main_Control_Create)
+		if ( NULL != ADL_Main_Control_Create)
+			//创建控制句柄
             ADL_Err = ADL_Main_Control_Create (ADL_Main_Memory_Alloc, 1);
 			// The second parameter is 1, which means:
 			// retrieve adapter information only for adapters that are physically present and enabled in the system
+		    //接收转接器信息，物理存在和系统可操作的是1
 	}
     else
     {
@@ -884,19 +907,22 @@ int OpenADL()
 }
 
 // Destroy ADL
+//关闭ADL，主要关闭ADL的相关配置文件
 void CloseADL()
 {
 	   ADL_MAIN_CONTROL_DESTROY         ADL_Main_Control_Destroy;
 
+	   //文件非空则关闭
 	if ( NULL != file )
 		fclose( file );
 	if ( NULL != file2 )
 		fclose( file2 );
-
-		ADL_Main_Memory_Free ( (void **)&lpAdapterInfo );
-		ADL_Main_Memory_Free ( (void **)&lpAdlDisplayInfo );
-	   
+	    //释放内存
+		ADL_Main_Memory_Free ( (void **)&lpAdapterInfo );//销毁转换器信息
+		ADL_Main_Memory_Free ( (void **)&lpAdlDisplayInfo );//销毁显示信息
+	   //获取结束函数句柄
 		ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY)GetProcAddress(hDLL,"ADL_Main_Control_Destroy");
+		//销毁内存
 		if ( NULL != ADL_Main_Control_Destroy )
             ADL_Main_Control_Destroy ();
 		
@@ -906,7 +932,7 @@ void CloseADL()
     FreeLibrary(hDLL);
 #endif
 }
-
+//ADLBios 信息到文件中
 int AdlBiosInfoToFile( int iAdapterIndex, int iDisplayIndex, ADLBiosInfo * lpAdlBI )
 {
 	if ( NULL == file || NULL == lpAdlBI )
@@ -918,9 +944,9 @@ int AdlBiosInfoToFile( int iAdapterIndex, int iDisplayIndex, ADLBiosInfo * lpAdl
 		fprintf( file, "%-17s %s\n", "Version", lpAdlBI->strVersion );
 		fprintf( file, "%-17s %s\n\n", "Date", lpAdlBI->strDate );
 
-	return ADL_OK;
+	return ADL_OK;//return 0;
 }
-
+//显示错误信息
 int DisplayErrorAndPause( char * sError )
 {
 	printf ( "%s",  sError );
@@ -928,20 +954,20 @@ int DisplayErrorAndPause( char * sError )
 	getchar();
 	return ADL_ERR;
 }
-
+//显示帮助信息
 void ShowHelp(void)
 {
 		printf ( "\nADL Utility, Ver 3.0        Copyright(c) 2010 Advanced Micro Devices, Inc.\n\n" );
-		printf ( "adlutil get [file]        : Get the display settings of all\n" );
+		printf ( "adlutil get [file]        : Get the display settings of all\n" );//获取 显示设置信息，并输出到文件
 		printf ( "                            active adapters [and saves them to file]\n" );
-		printf ( "adlutil set file          : Set the display with the parameters from file\n" );
-		printf ( "adlutil list [file]       : Get ALL Override Mode settings of all\n" );
+		printf ( "adlutil set file          : Set the display with the parameters from file\n" ); //根据文件设置显示信息
+		printf ( "adlutil list [file]       : Get ALL Override Mode settings of all\n" );//获取所有设置模式
 		printf ( "                            active adapters [and saves them to file]\n" );
-		printf ( "adlutil info file1 [file2]: Find Override Mode, defined in file1\n" );
-		printf ( "                            [and save the detailed timings in file2]\n" );
-		printf ( "adlutil over file         : Set Override Display mode from settings in file\n" );
-		printf ( "adlutil gen [file]        : Generate template to be used by 'over' command\n" );
-		printf ( "adlutil bios [file]       : Get the Video BIOS information\n" );
+		printf ( "adlutil info file1 [file2]: Find Override Mode, defined in file1\n" );//查找文件中的重载模型
+		printf ( "                            [and save the detailed timings in file2]\n" );//存储细节时序到
+		printf ( "adlutil over file         : Set Override Display mode from settings in file\n" );//设置重载模型到文件中
+		printf ( "adlutil gen [file]        : Generate template to be used by 'over' command\n" );//通用模板
+		printf ( "adlutil bios [file]       : Get the Video BIOS information\n" );//获取bios信息
 		DisplayErrorAndPause( "" );
 }
 

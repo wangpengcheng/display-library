@@ -30,15 +30,17 @@
 
 #ifndef ADL_SDK_H_
 #define ADL_SDK_H_
-
+//使用结构体
 #include "adl_structures.h"
 
 #if defined (LINUX)
 #define __stdcall
 #endif /* (LINUX) */
 
+//设置内存对齐
 /// Memory Allocation Call back 
 typedef void* ( __stdcall *ADL_MAIN_MALLOC_CALLBACK )( int );
-
+//使用std call 意味着： 1）参数从右向左压入堆栈，2）函数自身修改堆栈 3)函数名自动加前导的下划线，后面紧跟一个@符号，其后紧跟着参数的尺寸。
+//注意这里对linux中的gcc而言，需要使用 __attribute__((__stdcall__)) 代替 __stdcall
 
 #endif /* ADL_SDK_H_ */
