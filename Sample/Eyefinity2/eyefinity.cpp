@@ -635,6 +635,7 @@ int setBezelOffsets(
 	int iNumCreatedBezelOffsets = 0;
 	int iCurrentTransientMode;
 	//For Bezel Width and Height Ref Values
+	//设置参考宽度和高度
 	int iReferenceWidth = 0;
 	int iReferenceHeight = 0;
 	int iCurrentBezelOffset = 0;
@@ -759,59 +760,88 @@ int setBezelOffsets(
             iRetVal = ADL2_Display_Modes_Get(ADLContext_, iAdapterIndex, -1, &iNumModes, &pTransientModes);
 
 			//lppCreatedTransientModes = (ADLBezelTransientMode*) malloc(iNumCreatedTransientModes * sizeof(ADLBezelTransientMode));
+			//遍历临时模型更改位置
 			for(iCurrentTransientMode = 0; iCurrentTransientMode < iNumCreatedTransientModes; iCurrentTransientMode++)
 			{
 				// we need to figure out the positioning of this display in the SLS
+				//指明显示位置
 				pTransientModes[iCurrentTransientMode].iXRes = lppCreatedTransientModes[iCurrentTransientMode].displayMode.iXRes;
 				pTransientModes[iCurrentTransientMode].iYRes = lppCreatedTransientModes[iCurrentTransientMode].displayMode.iYRes;
+                //设置显示位置
                 iRetVal = ADL2_Display_Modes_Set(ADLContext_, iAdapterIndex, -1, 1, &pTransientModes[iCurrentTransientMode]);
 				break;
 			}
-
+			//设置成功
 			if (iRetVal == 0)
 			{
-                iRetVal = ADL2_Display_SLSMapConfig_Get(ADLContext_, iAdapterIndex, lpCreatedSLSMap.iSLSMapIndex, &lpCreatedSLSMap,
-														&iNumCreatedSLSTargets, &lppCreatedSLSTargets,
-														&iNumCreatedSLSNativeModes, &lppCreatedSLSNativeModes,
-														&iNumCreatedBezelModes, &lppCreatedBezelModes,
-														&iNumCreatedTransientModes, &lppCreatedTransientModes,
-														&iNumCreatedBezelOffsets, &lppCreatedBezelOffsets,
-														ADL_DISPLAY_SLSGRID_CAP_OPTION_RELATIVETO_CURRENTANGLE );
-
+				//重新查询 SLS映射配置
+                iRetVal = ADL2_Display_SLSMapConfig_Get(
+                	ADLContext_, 
+                	iAdapterIndex, 
+                	lpCreatedSLSMap.iSLSMapIndex, 
+                	&lpCreatedSLSMap,
+					&iNumCreatedSLSTargets, 
+					&lppCreatedSLSTargets,
+					&iNumCreatedSLSNativeModes, 
+					&lppCreatedSLSNativeModes,
+					&iNumCreatedBezelModes, 
+					&lppCreatedBezelModes,
+					&iNumCreatedTransientModes, 
+					&lppCreatedTransientModes,
+					&iNumCreatedBezelOffsets, 
+					&lppCreatedBezelOffsets,
+					ADL_DISPLAY_SLSGRID_CAP_OPTION_RELATIVETO_CURRENTANGLE
+					);
+                //开始设置偏移
+                //检查偏移设置是否大于0
 				if (iNumCreatedBezelOffsets > 0)
 				{
+					//设置参考高度为边缘偏移
 					iReferenceWidth = lppCreatedBezelOffsets[iNumCreatedBezelOffsets - 1].iDisplayWidth;
 					iReferenceHeight = lppCreatedBezelOffsets[iNumCreatedBezelOffsets - 1].iDisplayHeight;
 
 					
 					//Try applying Permanently
+					//为应用偏移结构体，分配内存
 					lpAppliedBezelOffsets = (ADLSLSOffset*) malloc(iNumCreatedSLSTargets * sizeof(ADLSLSOffset));
 					//Set the initial offsets to start setting the user offsets
-					for(iCurrentSLSTarget = 0; iCurrentSLSTarget < iNumCreatedSLSTargets; iCurrentSLSTarget++)
+					//设置初始化的偏移，到用户起始设置
+					for(iCurrentSLSTarget = 0; iCurrentSLSTarget < iNumCreatedSLSTargets; iCurrentSLSTarget++)//遍历目标
 					{
-						for (iCurrentBezelOffset = 0; iCurrentBezelOffset< iNumCreatedBezelOffsets; iCurrentBezelOffset++)
+						for (iCurrentBezelOffset = 0; iCurrentBezelOffset< iNumCreatedBezelOffsets; iCurrentBezelOffset++)//遍历当前偏移
 						{
 							if (lppCreatedBezelOffsets[iCurrentBezelOffset].iBezelModeIndex == lppCreatedTransientModes[iNumCreatedTransientModes - 1].iSLSModeIndex &&
-								lppCreatedBezelOffsets[iCurrentBezelOffset].displayID.iDisplayLogicalIndex == lppCreatedSLSTargets[iCurrentSLSTarget].displayTarget.displayID.iDisplayLogicalIndex)
+								lppCreatedBezelOffsets[iCurrentBezelOffset].displayID.iDisplayLogicalIndex == lppCreatedSLSTargets[iCurrentSLSTarget].displayTarget.displayID.iDisplayLogicalIndex)//索引相同的时候
 							{
-								lpAppliedBezelOffsets[iCurrentSLSTarget].iBezelOffsetX = lppCreatedBezelOffsets[iCurrentBezelOffset].iBezelOffsetX - (lppCreatedSLSTargets[iCurrentSLSTarget].iSLSGridPositionX * iHbezel);
-								lpAppliedBezelOffsets[iCurrentSLSTarget].iBezelOffsetY = lppCreatedBezelOffsets[iCurrentBezelOffset].iBezelOffsetY - (lppCreatedSLSTargets[iCurrentSLSTarget].iSLSGridPositionY * iVbezel);
+								lpAppliedBezelOffsets[iCurrentSLSTarget].iBezelOffsetX = lppCreatedBezelOffsets[iCurrentBezelOffset].iBezelOffsetX - (lppCreatedSLSTargets[iCurrentSLSTarget].iSLSGridPositionX * iHbezel);//设置X轴的偏移
+								lpAppliedBezelOffsets[iCurrentSLSTarget].iBezelOffsetY = lppCreatedBezelOffsets[iCurrentBezelOffset].iBezelOffsetY - (lppCreatedSLSTargets[iCurrentSLSTarget].iSLSGridPositionY * iVbezel);//设置y轴的偏移
 
-								lpAppliedBezelOffsets[iCurrentSLSTarget].iAdapterIndex = iAdapterIndex;
-								lpAppliedBezelOffsets[iCurrentSLSTarget].iSLSMapIndex = lpCreatedSLSMap.iSLSMapIndex;
-								lpAppliedBezelOffsets[iCurrentSLSTarget].displayID.iDisplayLogicalAdapterIndex = iAdapterIndex;
-								lpAppliedBezelOffsets[iCurrentSLSTarget].displayID.iDisplayLogicalIndex = lppCreatedSLSTargets[iCurrentSLSTarget].displayTarget.displayID.iDisplayLogicalIndex;
-								lpAppliedBezelOffsets[iCurrentSLSTarget].displayID.iDisplayPhysicalAdapterIndex = iAdapterIndex;
-								lpAppliedBezelOffsets[iCurrentSLSTarget].displayID.iDisplayPhysicalIndex = lppCreatedSLSTargets[iCurrentSLSTarget].displayTarget.displayID.iDisplayLogicalIndex;
-								lpAppliedBezelOffsets[iCurrentSLSTarget].iDisplayWidth = iReferenceWidth;
-								lpAppliedBezelOffsets[iCurrentSLSTarget].iDisplayHeight = iReferenceHeight;
+								lpAppliedBezelOffsets[iCurrentSLSTarget].iAdapterIndex = iAdapterIndex;//设置显卡
+								lpAppliedBezelOffsets[iCurrentSLSTarget].iSLSMapIndex = lpCreatedSLSMap.iSLSMapIndex;//设置映射编号
+								lpAppliedBezelOffsets[iCurrentSLSTarget].displayID.iDisplayLogicalAdapterIndex = iAdapterIndex;//设置显示的先打编号
+								lpAppliedBezelOffsets[iCurrentSLSTarget].displayID.iDisplayLogicalIndex = lppCreatedSLSTargets[iCurrentSLSTarget].displayTarget.displayID.iDisplayLogicalIndex;//设置显示下标
+								lpAppliedBezelOffsets[iCurrentSLSTarget].displayID.iDisplayPhysicalAdapterIndex = iAdapterIndex;//设置物理显卡
+								lpAppliedBezelOffsets[iCurrentSLSTarget].displayID.iDisplayPhysicalIndex = lppCreatedSLSTargets[iCurrentSLSTarget].displayTarget.displayID.iDisplayLogicalIndex;//设置逻辑显卡
+								lpAppliedBezelOffsets[iCurrentSLSTarget].iDisplayWidth = iReferenceWidth;//设置显示宽度
+								lpAppliedBezelOffsets[iCurrentSLSTarget].iDisplayHeight = iReferenceHeight;//设置显示高度
 							}
 						}
 					}
-
+					//设置掩码为0
 					lpCreatedSLSMap.iSLSMapMask = 0;
+					//设置验证匹配
 					lpCreatedSLSMap.iSLSMapValue = iSLSMapValue;
-                    iRetVal = ADL2_Display_BezelOffset_Set(ADLContext_, iAdapterIndex, lpCreatedSLSMap.iSLSMapIndex, iNumCreatedSLSTargets, lpAppliedBezelOffsets, lpCreatedSLSMap, ADL_DISPLAY_BEZELOFFSET_COMMIT | ADL_DISPLAY_SLSGRID_CAP_OPTION_RELATIVETO_CURRENTANGLE);
+                    //设置相关偏移
+                    iRetVal = ADL2_Display_BezelOffset_Set(
+                    	ADLContext_, 
+                    	iAdapterIndex, 
+                    	lpCreatedSLSMap.iSLSMapIndex, 
+                    	iNumCreatedSLSTargets, 
+                    	lpAppliedBezelOffsets, //位置偏移相关参数
+                    	lpCreatedSLSMap, 
+                    	ADL_DISPLAY_BEZELOFFSET_COMMIT | ADL_DISPLAY_SLSGRID_CAP_OPTION_RELATIVETO_CURRENTANGLE
+                    	);
+
 					if (iRetVal != 0)
 					{
 						PRINTF("Setting bezel offsets failed");
@@ -823,36 +853,55 @@ int setBezelOffsets(
 
 	return iRetVal;
 }
-
+//设置解决方案,输入显卡编号，宽度，高度
 int setResolution(int iAdapterIndex, int iXRes, int iYRes)
 {
-	int iNumModes, iNumModesPriv, iRetVal;
-	ADLMode *pModes = NULL, *lppModesPriv = NULL;
-	int iResfound = 0,i;
+	//
+	int iNumModes, //模型数量 
+	iNumModesPriv, //
+	iRetVal;//函数是否成功
+	
+	ADLMode *pModes = NULL,//模式指针 
+	*lppModesPriv = NULL;//模式指针预览
+	int iResfound = 0,i;//长度查找辅助函数
+	//如果显卡索引存在
 	if (iAdapterIndex != -1)
 	{
 		// Check if the mode is in the possible mode list.
-        iRetVal = ADL2_Display_PossibleMode_Get(ADLContext_, iAdapterIndex, &iNumModesPriv, &lppModesPriv);
+		// 确认显卡可能存在显示模型
+        iRetVal = ADL2_Display_PossibleMode_Get(
+        	ADLContext_, 
+        	iAdapterIndex, 
+        	&iNumModesPriv,// lppmodes数组长度
+        	&lppModesPriv //lppmodes 数组，存储可能存在的模型
+        	);
+        //成功获取
 		if (NULL != lppModesPriv)
 		{
+			//遍历并且查找，宽度匹配的
 			for ( i=0;i<iNumModesPriv;i++)
 			{
 				if( lppModesPriv[i].iXRes == iXRes && lppModesPriv[i].iYRes == iYRes)
 				{			
-					iResfound=1;
+					iResfound=1;//找到就直接跳出
 					break;
 				}
 			}			
 		}
-
+		//如果存在相同尺寸的
 		if (iResfound)
 		{
+			//获取当前显卡内的所有显示模式
             iRetVal = ADL2_Display_Modes_Get(ADLContext_, iAdapterIndex, -1, &iNumModes, &pModes);
+			//查询成功
 			if (iRetVal == ADL_OK)
 			{
+				//设置第一个模式为可能存在模型
 				pModes[0].iXRes = iXRes;
 				pModes[0].iYRes = iYRes;
+				//更改显示模式
                 iRetVal = ADL2_Display_Modes_Set(ADLContext_, iAdapterIndex, -1, 1, &pModes[0]);
+				//更高成功
 				if (iRetVal != ADL_OK)
 				{
 					PRINTF("unable to set provided resolution \n");
@@ -868,104 +917,162 @@ int setResolution(int iAdapterIndex, int iXRes, int iYRes)
 	{
 		PRINTF("not a valid adapter index \n");
 	}
+	//释放相关内存
 	ADL_Main_Memory_Free((void**)&pModes);
 	ADL_Main_Memory_Free((void**)&lppModesPriv);
 	return TRUE;
 }
-
+//设置初始化显卡
 int setPrimaryAdapter(int iAdapterIndex)
 {
+	//记录当前显卡编号
 	int iCurrentAdapterIndex = 0;
+    //获取显卡初始化后的编号
     if (ADL_OK == ADL2_Adapter_Primary_Get(ADLContext_, &iCurrentAdapterIndex))
 	{
+		//如果编号不同，并且可以更改
 		if (iCurrentAdapterIndex != iAdapterIndex && CanSetPrimary(iAdapterIndex ,iCurrentAdapterIndex))
 		{
+			//重新设置显卡编号
             ADL2_Adapter_Primary_Set(ADLContext_, iAdapterIndex);
 		}
 	}
 	return TRUE;
 }
-
+//禁止显卡显示
 int setAdapterDisplaysToDisable(int iAdapterIndex)
 {
+	//显卡列表
 	int iAdapterIndexes[6];
+	//显示列表
 	int iDisplayIndexes[6];
+	//计数
 	int iCount=0;
+	//是否激活
 	int active;
+	//编号
 	int i;
+	//获取显示在显卡中的索引
 	getDisplayIndexesofOneGPU(iAdapterIndex, &iAdapterIndexes[0], &iDisplayIndexes[0], &iCount);
 
 	for (i=0;i<iCount;i++)
 	{
+		// 在先科给定的索引中查找不相同数目的缩影
 		if (iAdapterIndex != iAdapterIndexes[i] && iAdapterIndexes[i] != -1)
 		{
+			//禁止扩展显示到其它桌面
             ADL2_Adapter_Active_Set(ADLContext_, iAdapterIndexes[i], 0, &active);
 		}
 	}
 	return TRUE;
 }
-
-int setAdapterDisplaysToClone(int iAdapterIndex, int iDisplayIndexes[], int iDisplaysCount)
+//设置显卡可以复制显示
+int setAdapterDisplaysToClone(
+	int iAdapterIndex,  //显卡编号
+	int iDisplayIndexes[],  //显示数组
+	int iDisplaysCount //显示的总数
+	)
 {
+	//辅助计数 i
 	int i;
+	// ADL显示映射
 	ADLDisplayMap mapArray;
+    //ADL目标映射
     ADLDisplayTarget* pDisplayTargets = NULL;
 
-
+    //模式数量
 	int iNumModes;
+	//ADL 模型指针
 	ADLMode *pModes = NULL;
+	//初试化显示目标指针
 	pDisplayTargets = (ADLDisplayTarget*) malloc(iDisplaysCount * sizeof(ADLDisplayTarget));
+	//设置为0值，防止内存更改存在的错误
 	memset(&(mapArray), 0, sizeof(ADLDisplayMap));
+	//映射数组的目标显示数目
 	mapArray.iNumDisplayTarget = iDisplaysCount;
+	//目标显示下标索引
 	mapArray.iDisplayMapIndex = 0;
-	
+	//获取显示的模式
     ADL2_Display_Modes_Get(ADLContext_,iAdapterIndex, -1, &iNumModes, &pModes);
+	//为mapArray 初始化值
 	memset(&(mapArray.displayMode), 0, sizeof(ADLMode));
+	//设置显卡编号
 	mapArray.displayMode.iAdapterIndex = iAdapterIndex;
+	//设置目标显示模式的参数为原来的显示模式
 	mapArray.displayMode.iModeFlag = pModes[0].iModeFlag;
 	mapArray.displayMode.iOrientation = pModes[0].iOrientation;
 	mapArray.displayMode.fRefreshRate = pModes[0].fRefreshRate;
 	mapArray.displayMode.iColourDepth = pModes[0].iColourDepth;
-	mapArray.displayMode.iXPos = pModes[0].iXPos;
-	mapArray.displayMode.iYPos = pModes[0].iYPos;
-	mapArray.displayMode.iXRes = pModes[0].iXRes;
-	mapArray.displayMode.iYRes = pModes[0].iYRes;
+	mapArray.displayMode.iXPos = pModes[0].iXPos;//x坐标
+	mapArray.displayMode.iYPos = pModes[0].iYPos;//y坐标
+	mapArray.displayMode.iXRes = pModes[0].iXRes;//宽度
+	mapArray.displayMode.iYRes = pModes[0].iYRes;//高度
 
+	// 遍历显示数目
 	for (i=0;i<iDisplaysCount;i++)
 	{
+		//初始化值
 		memset(&(pDisplayTargets[i].displayID), 0, sizeof(ADLDisplayID));
+		//为显示目标数组初始化值
 		memset(&(pDisplayTargets[i]), 0, sizeof(ADLDisplayTarget));
+		//设置逻辑显卡为当前显卡
 		pDisplayTargets[i].displayID.iDisplayLogicalAdapterIndex = iAdapterIndex;
+		//设置逻辑序列为当前序列
 		pDisplayTargets[i].displayID.iDisplayLogicalIndex = iDisplayIndexes[i];
 		pDisplayTargets[i].iDisplayMapIndex = 0;
 	}
-    ADL2_Display_DisplayMapConfig_Set(ADLContext_, iAdapterIndex, 1, &mapArray, iDisplaysCount, pDisplayTargets);
-
+	//设置显示映射配置，主要更改了映射的相关参数，个目标的逻辑显卡序号
+    ADL2_Display_DisplayMapConfig_Set(
+    	ADLContext_, 
+    	iAdapterIndex, 
+    	1, 
+    	&mapArray, 
+    	iDisplaysCount, 
+    	pDisplayTargets
+    	);
+    //释放显示内存
 	ADL_Main_Memory_Free((void**)&pDisplayTargets);
 	return TRUE;
 }
 
+//禁止显卡宽域映射，输入显卡序号；主要是讲显卡与映射之间的连接断掉
 int disableAdapterEyefinityMapping(int iAdapterIndex)
 {
+	//记录显示目标数量
 	int iNumDisplayTarget = 0;
+	//ADL显示目标函数
 	ADLDisplayTarget *lpDisplayTarget = NULL;
+	//统计显示映射
 	int iNumDisplayMap = 0;
+	//ADL显示映射数组指针
 	ADLDisplayMap *lpDisplayMap = NULL;
+	//SLS映射索引，函数真值
 	int iSLSMapIndex = -1,iRetVal=-1;
-
-    iRetVal = ADL2_Display_DisplayMapConfig_Get(ADLContext_, iAdapterIndex,
-														&iNumDisplayMap, &lpDisplayMap, 
-														&iNumDisplayTarget, &lpDisplayTarget, 
-														ADL_DISPLAY_DISPLAYMAP_OPTION_GPUINFO );
+	//获取当前显卡的显示映射配置
+    iRetVal = ADL2_Display_DisplayMapConfig_Get(
+    	ADLContext_, 
+    	iAdapterIndex,
+		&iNumDisplayMap, 
+		&lpDisplayMap, 
+		&iNumDisplayTarget, 
+		&lpDisplayTarget, 
+		ADL_DISPLAY_DISPLAYMAP_OPTION_GPUINFO
+		);
+    //函数执行成功，并且显示画面大于1进行接下来的活动
 	if (ADL_OK == iRetVal&& 1<iNumDisplayTarget)
 	{
-        iRetVal = ADL2_Display_SLSMapIndex_Get(ADLContext_, iAdapterIndex,
-			iNumDisplayTarget,
-			lpDisplayTarget,
-			&iSLSMapIndex);
-
+		//获取SLS显示映射索引
+        iRetVal = ADL2_Display_SLSMapIndex_Get(
+        	ADLContext_, 
+        	iAdapterIndex,
+			iNumDisplayTarget,//目标显示数量
+			lpDisplayTarget,//目标显示数组
+			&iSLSMapIndex //SLS映射索引
+			);
+        //获取成功
 		if (ADL_OK == iRetVal && iSLSMapIndex != -1)
 		{
+			//重新设置显卡和SLS连接为0
             iRetVal = ADL2_Display_SLSMapConfig_SetState(ADLContext_, iAdapterIndex, iSLSMapIndex, 0);
 			if (iRetVal != ADL_OK)
 			{
@@ -977,40 +1084,57 @@ int disableAdapterEyefinityMapping(int iAdapterIndex)
 			PRINTF ("SLS is not created on this adapter");
 		}
 	}
+	//否则指直接销毁
 	ADL_Main_Memory_Free((void**)&lpDisplayMap);
+	//返回 true
 	return TRUE;
 }
-
+//输出显示索引
 int printDisplayIndexes()
 {
+	//显卡数目，显示数目
 	int  iNumberAdapters=0, iNumDisplays;
+    //显卡索引值
     int  iAdapterIndex;
+    //显示索引值
     int  iDisplayIndex[6];
+	//总线数目
 	int iBusNumber;
-	int i=0,j=0,k=0,l=0, iGPUfound=0, iDisplayFound=0, iGPUIndex=0,iCount=0, iGPUCounter=0;
-	LPAdapterInfo     lpAdapterInfo = NULL;
-    LPADLDisplayInfo  lpAdlDisplayInfo = NULL;
-    int igpuBusIndexes[4];
+	
+	int i=0,j=0,k=0,l=0,//遍历辅助元素 
+	iGPUfound=0,  //GPU查找
+	iDisplayFound=0,  //显示查找
+	iGPUIndex=0, //GPU索引
+	iCount=0,  //统计总数
+	iGPUCounter=0; //GOU 计数
+	LPAdapterInfo     lpAdapterInfo = NULL;//显卡指针
+    LPADLDisplayInfo  lpAdlDisplayInfo = NULL; //ADL显示信息
+    int igpuBusIndexes[4]; //gpu总线数组
 
 	// Obtain the number of adapters for the system
+	// 查询系统中的显卡数量
     if (ADL_OK != ADL2_Adapter_AdapterInfoX3_Get(ADLContext_, -1, &iNumberAdapters, &lpAdapterInfo))
 	{
 	       PRINTF("ADL2_Adapter_AdapterInfoX3_Get failed!\n");
 		   return 0;
 	}
-    
+    //初始化GPU数组
 	for (iGPUIndex = 0; iGPUIndex < 4; iGPUIndex++)
 	{
 		igpuBusIndexes[iGPUIndex] = -1;
 	}
-
+	//输出 显卡和显示标号
 	PRINTF (" Adapter and Displays Indexes <AdapterIndex, DisplayIndex> \n");
 	PRINTF (" --------------------------------------------------------- \n");
     // Repeat for all available adapters in the system
+    // 遍历显卡
     for ( i = 0; i < iNumberAdapters; i++ )
     {
+    	//初始化GPU found 
 		iGPUfound = 0;
+		//获取总线信息
 		iBusNumber = lpAdapterInfo[ i ].iBusNumber;
+		//查找总线下标对应的值
 		for (iGPUIndex = 0; iGPUIndex < 4; iGPUIndex++)
 		{
 			if(igpuBusIndexes[iGPUIndex] != -1 && igpuBusIndexes[iGPUIndex] == iBusNumber)
@@ -1019,46 +1143,67 @@ int printDisplayIndexes()
 				break;
 			}
 		}
-
+		// 如果没有找到对应的GPU
 		if (!iGPUfound)
 		{
+			//初始化6个显示下标数组
 			for (l=0;l<6;l++)
 			{
 				iDisplayIndex[l] = -1;				
 			}
+			//统计计数
 			iCount =0;
+			//显示连接到GPU 编号
 			PRINTF (" Displays Connected to GPU #%d\n", iGPUCounter);
 			PRINTF (" ----------------------------- \n");
+			// 遍历显卡
 			for (j = 0; j < iNumberAdapters; j++)
 			{
+				//如果连接总线数目与显示器总线数目相同
 				if (iBusNumber == lpAdapterInfo[ j ].iBusNumber)
 				{
+					//获取当前显卡编号
 					iAdapterIndex = lpAdapterInfo[ j ].iAdapterIndex;
+					//释放原来的ALD显示信息内存
 					ADL_Main_Memory_Free ((void**) &lpAdlDisplayInfo );
-                    if (ADL_OK != ADL2_Display_DisplayInfo_Get(ADLContext_, lpAdapterInfo[j].iAdapterIndex, &iNumDisplays, &lpAdlDisplayInfo, 0))
+                    if (ADL_OK != ADL2_Display_DisplayInfo_Get(//循环知道找到有输出的显卡信息
+                    	ADLContext_, 
+                    	lpAdapterInfo[j].iAdapterIndex, 
+                    	&iNumDisplays, 
+                    	&lpAdlDisplayInfo, 
+                    	0)
+                    	)
 						continue;
-
+					// 遍历显示信息
 					for ( k = 0; k < iNumDisplays; k++ )
 					{
-							//For each display, check its status. Use the display only if it's connected AND mapped (iDisplayInfoValue: bit 0 and 1 )
+							// For each display, check its status. Use the display only if it's connected AND mapped (iDisplayInfoValue: bit 0 and 1 )
+							// 对于每个显示器，检查其状态。仅在已连接和映射的情况下使用显示器（IDisplayinfoValue:位0和1）
+						//主要是为了找到连接的显示信息序号K
 						if (( ADL_DISPLAY_DISPLAYINFO_DISPLAYCONNECTED  ) != 
 							( ADL_DISPLAY_DISPLAYINFO_DISPLAYCONNECTED 	&
 								lpAdlDisplayInfo[ k ].iDisplayInfoValue ) )
 							continue;   // Skip the not connected or not mapped displays         
-					
+						// 是否找到
 						iDisplayFound = 0;
+						// 遍历统计
 						for (l=0;l<iCount;l++)
 						{
+							//查找逻辑序号是否和显示序号相同
 							if (lpAdlDisplayInfo[k].displayID.iDisplayLogicalIndex == iDisplayIndex[l])
 							{
+								//找到了显示
 								iDisplayFound = 1;
 								break;
 							}
 						}
+						//没有找到显示
 						if (!iDisplayFound)
 						{
+							//重新设置最后一个显示逻辑编号
 							iDisplayIndex[iCount] = lpAdlDisplayInfo[ k ].displayID.iDisplayLogicalIndex;
-							(iCount)++;
+							(iCount)++;//添加计数
+							//输出显示逻辑显卡编号和逻辑显示编号
 							PRINTF(" {%d,%d} \t",lpAdlDisplayInfo[ k ].displayID.iDisplayLogicalAdapterIndex, lpAdlDisplayInfo[ k ].displayID.iDisplayLogicalIndex);
 						}	
 					}
@@ -1066,6 +1211,7 @@ int printDisplayIndexes()
 				
 			}
 			PRINTF("\n \n");
+			//设置下一个GPU的总线编号
 			igpuBusIndexes[iGPUCounter++] = iBusNumber;
 
 		}
@@ -1077,51 +1223,66 @@ int printDisplayIndexes()
 	PRINTF (" --------------------------------------------------------- \n");
 	return TRUE;
 }
-
-int getDisplayIndexesofOneGPU(int iCurrentAdapterIndex, int* lpAdpaterIndexes, int* lpDisplayIndexes, int* lpCount )
+//获取GPU显示的编号索引
+int getDisplayIndexesofOneGPU(
+	int iCurrentAdapterIndex, //当前显卡编号 
+	int* lpAdpaterIndexes, //lp显卡索引
+	int* lpDisplayIndexes, //显示索引
+	int* lpCount //lp计数
+	)
 {
-	int  iNumberAdapters, iNumDisplays;
-    int  iAdapterIndex;
-  	int iBusNumber;
+	//显卡数量
+	int  iNumberAdapters, 
+	iNumDisplays;//显示数量
+    int  iAdapterIndex;//显卡索引
+  	int iBusNumber;//总线数目
 	int i=0,j=0, found=0,k=0;
 	LPAdapterInfo     lpAdapterInfo = NULL;
     LPADLDisplayInfo  lpAdlDisplayInfo = NULL;
-	*lpCount = 0;
-
+	*lpCount = 0;//lpCount=0;
+	//获取显卡的信息
     if (ADL_OK != ADL2_Adapter_AdapterInfoX3_Get(ADLContext_, -1, &iNumberAdapters, &lpAdapterInfo))
     {
         PRINTF("ADL2_Adapter_AdapterInfoX3_Get failed!\n");
         return 0;
     }
-
+    //遍历显卡列表
 	for ( i = 0; i < iNumberAdapters; i++ )
     {
 		if (lpAdapterInfo[i].iAdapterIndex == iCurrentAdapterIndex)
 		{
+			//获取当前显卡的总线数目
 			iBusNumber = lpAdapterInfo[i].iBusNumber;
 		}
 	}
     // Repeat for all available adapters in the system
+    // 对系统中所有可用的适配器重复此步骤
     for ( i = 0; i < iNumberAdapters; i++ )
     {
+    	//找到总线相同的数目就执行下面的操作
 		if (iBusNumber != lpAdapterInfo[ i ].iBusNumber)
 			continue;
-
+		//更改显卡缩影
 		iAdapterIndex = lpAdapterInfo[ i ].iAdapterIndex;
+		//释放原来的lp显示信息
 		ADL_Main_Memory_Free ((void**) &lpAdlDisplayInfo );
+        //如果成功获取到该显卡的显示信息就继续
         if (ADL_OK != ADL2_Display_DisplayInfo_Get(ADLContext_, lpAdapterInfo[i].iAdapterIndex, &iNumDisplays, &lpAdlDisplayInfo, 0))
 			continue;
-
+		//遍历显示信息
         for ( j = 0; j < iNumDisplays; j++ )
         {
 				//For each display, check its status. Use the display only if it's connected AND mapped (iDisplayInfoValue: bit 0 and 1 )
+				//对于每个显示器，检查其状态。仅在已连接和映射的情况下使用显示器（IDisplayinfoValue:位0和1）
             if (( ADL_DISPLAY_DISPLAYINFO_DISPLAYCONNECTED  ) != 
                 ( ADL_DISPLAY_DISPLAYINFO_DISPLAYCONNECTED 	&
 					lpAdlDisplayInfo[ j ].iDisplayInfoValue ) )
-                continue;   // Skip the not connected or not mapped displays
+                continue;   // Skip the not connected or not mapped displays 
+            				// 跳过未连接或未映射的显示
          
 			found =1;
-
+			//根本不会进入循环，不知道为什么要用???
+			//玄幻查找ipconut相同的
 			for (k=0;k<*lpCount;k++)
 			{
 				if (lpAdlDisplayInfo[ j].displayID.iDisplayLogicalIndex == lpDisplayIndexes[k])
@@ -1132,24 +1293,29 @@ int getDisplayIndexesofOneGPU(int iCurrentAdapterIndex, int* lpAdpaterIndexes, i
 			}
 			if (found)
 			{
+				//更改显卡的逻辑显卡顺序
 				lpAdpaterIndexes[*lpCount] = lpAdlDisplayInfo[ j ].displayID.iDisplayLogicalAdapterIndex;
 				lpDisplayIndexes[*lpCount] = lpAdlDisplayInfo[ j ].displayID.iDisplayLogicalIndex;
-				(*lpCount)++;
+				(*lpCount)++;//lpCount数目加加
 			}			
 		}
 	}
     ADL_Main_Memory_Free((void**)&lpAdapterInfo);
 	return TRUE;
 }
-
-int CanSetPrimary(int iAdapterIndex, int iCurrentPrimaryAdapterIndex)
+//初始化显卡，主要是确认一下信息
+int CanSetPrimary(
+	int iAdapterIndex,//显卡编号 
+	int iCurrentPrimaryAdapterIndex //当前初始化的显卡编号
+	)
 {
-	int  iNumberAdapters;
-	int iBusNumber = 0, iCurrentPrimaryAdapterBusNumber = 0;
-	int i;
-	LPAdapterInfo     lpAdapterInfo = NULL;
-    LPADLDisplayInfo  lpAdlDisplayInfo = NULL;
-
+	int  iNumberAdapters;//显卡数量
+	int iBusNumber = 0, //总线数目
+	iCurrentPrimaryAdapterBusNumber = 0;//当前初始化的总线数目
+	int i;//顺序标号
+	LPAdapterInfo     lpAdapterInfo = NULL; //显卡信息指针
+    LPADLDisplayInfo  lpAdlDisplayInfo = NULL; //显示信息指针
+    //获取显卡数目和显卡信息数组
     if (ADL_OK != ADL2_Adapter_AdapterInfoX3_Get(ADLContext_, -1, &iNumberAdapters, &lpAdapterInfo))
     {
         PRINTF("ADL2_Adapter_AdapterInfoX3_Get failed!\n");
@@ -1158,10 +1324,14 @@ int CanSetPrimary(int iAdapterIndex, int iCurrentPrimaryAdapterIndex)
 
 	//Finding Adapater Index for SLS creation.
     // Repeat for all available adapters in the system
+    // 正在查找用于创建SLS的adapater索引。
+    // 对系统中所有可用的适配器重复此步骤
+    // 查找显示器信息中的显示器索引
     for ( i = 0; i < iNumberAdapters; i++ )
     {
 		if (iAdapterIndex == lpAdapterInfo[ i ].iAdapterIndex)
 		{
+			//更新总线数目
 			iBusNumber = lpAdapterInfo[ i ].iBusNumber;
 		}       
 		if (iCurrentPrimaryAdapterIndex == lpAdapterInfo[ i ].iAdapterIndex)
@@ -1169,11 +1339,12 @@ int CanSetPrimary(int iAdapterIndex, int iCurrentPrimaryAdapterIndex)
 			iCurrentPrimaryAdapterBusNumber = lpAdapterInfo[ i ].iBusNumber;
 		}
 	}
-
+	//释放显示器数组信息
     ADL_Main_Memory_Free((void**)&lpAdapterInfo);
+	//当前显示器总线数目与显示器列表总线数目相同
 	if (iCurrentPrimaryAdapterBusNumber == iBusNumber)
 	{
-		return 1;
+		return 1; //返回成功
 	}
 
 	return 0;
