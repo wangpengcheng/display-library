@@ -74,7 +74,7 @@ int main (int c,char* k[],char* s[])
 #if defined (LINUX)
     void *hDLL;		// Handle to .so library
 #else
-    HINSTANCE hDLL;		// Handle to DLL
+    HINSTANCE hDLL;		// Handle to DLL 
 #endif
 
 
@@ -87,15 +87,19 @@ int main (int c,char* k[],char* s[])
     ADL_DISPLAY_COLOR_SET            ADL_Display_Color_Set;
     ADL_DISPLAY_DISPLAYINFO_GET      ADL_Display_DisplayInfo_Get;
 	
-    LPAdapterInfo     lpAdapterInfo = NULL;
-    LPADLDisplayInfo  lpAdlDisplayInfo = NULL;
+    LPAdapterInfo     lpAdapterInfo = NULL;//转接器信息指针
+    LPADLDisplayInfo  lpAdlDisplayInfo = NULL;//ADL显示信息
     int  i, j;
-    int  iNumberAdapters;
-    int  iAdapterIndex;
-    int  iDisplayIndex;
-    int  iNumDisplays;
-    int  iColorCaps, iValidBits;
-    int  iCurrent, iDefault, iMin, iMax, iStep;
+    int  iNumberAdapters;//转换器数量
+    int  iAdapterIndex;//转换器下标
+    int  iDisplayIndex;//显示下标
+    int  iNumDisplays;//显示数目
+    int  iColorCaps, iValidBits;//色彩和位图深度
+    int  iCurrent, //中断
+            iDefault, //默认
+            iMin, //最小
+            iMax, //最大
+            iStep;//步长
     
 
 #if defined (LINUX)
@@ -113,7 +117,7 @@ int main (int c,char* k[],char* s[])
             printf("ADL library not found!\n");
             return 0;
         }
-
+        //获取相关函数
         ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE) GetProcAddress(hDLL,"ADL_Main_Control_Create");
         ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY) GetProcAddress(hDLL,"ADL_Main_Control_Destroy");
         ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET) GetProcAddress(hDLL,"ADL_Adapter_NumberOfAdapters_Get");
@@ -137,6 +141,7 @@ int main (int c,char* k[],char* s[])
 
         // Initialize ADL. The second parameter is 1, which means:
         // retrieve adapter information only for adapters that are physically present and enabled in the system
+        //获取主要控制句柄
         if ( ADL_OK != ADL_Main_Control_Create (ADL_Main_Memory_Alloc, 1) )
 		{
 	       printf("ADL Initialization Error!\n");
@@ -144,25 +149,30 @@ int main (int c,char* k[],char* s[])
 		}
 
         // Obtain the number of adapters for the system
+        // 检测所有转接口的数目
         if ( ADL_OK != ADL_Adapter_NumberOfAdapters_Get ( &iNumberAdapters ) )
 		{
 	       printf("Cannot get the number of adapters!\n");
 		   return 0;
 		}
-
+        // 
         if ( 0 < iNumberAdapters )
         {
+            //为转换器信息分配内存
             lpAdapterInfo = (LPAdapterInfo)malloc ( sizeof (AdapterInfo) * iNumberAdapters );
             memset ( lpAdapterInfo,'\0', sizeof (AdapterInfo) * iNumberAdapters );
 
             // Get the AdapterInfo structure for all adapters in the system
-            ADL_Adapter_AdapterInfo_Get (lpAdapterInfo, sizeof (AdapterInfo) * iNumberAdapters);
+            // 接收所有操作系统知道的转接器信息
+            ADL_Adapter_AdapterInfo_Get (lpAdapterInfo, sizeof (AdapterInfo) * iNumberAdapters);//输入信息和转换器数量
         }
 
         // Repeat for all available adapters in the system
+        // 遍历所有转接器接口
         for ( i = 0; i < iNumberAdapters; i++ )
         {
 				iAdapterIndex = lpAdapterInfo[ i ].iAdapterIndex;
+                //释放相关内存
 				ADL_Main_Memory_Free ( (void**)&lpAdlDisplayInfo );
 				if (ADL_OK != ADL_Display_DisplayInfo_Get (lpAdapterInfo[i].iAdapterIndex, &iNumDisplays, &lpAdlDisplayInfo, 0))
 					continue;
@@ -170,6 +180,7 @@ int main (int c,char* k[],char* s[])
             for ( j = 0; j < iNumDisplays; j++ )
             {
                // For each display, check its status. Use the display only if it's connected AND mapped (iDisplayInfoValue: bit 0 and 1 )
+               // 遍历所有的显示信息，确认它的状态，使用显示，
                if (  ( ADL_DISPLAY_DISPLAYINFO_DISPLAYCONNECTED | ADL_DISPLAY_DISPLAYINFO_DISPLAYMAPPED ) != 
                  ( ADL_DISPLAY_DISPLAYINFO_DISPLAYCONNECTED | ADL_DISPLAY_DISPLAYINFO_DISPLAYMAPPED	&
 						lpAdlDisplayInfo[ j ].iDisplayInfoValue ) )
@@ -178,14 +189,15 @@ int main (int c,char* k[],char* s[])
                // Is the display mapped to this adapter? This test is too restrictive and may not be needed.
                if ( iAdapterIndex != lpAdlDisplayInfo[ j ].displayID.iDisplayLogicalAdapterIndex )
                     continue;
-
+                //显示下标
                 iDisplayIndex = lpAdlDisplayInfo[ j ].displayID.iDisplayLogicalIndex;
-
+                //获取色彩信息
                 ADL_Display_ColorCaps_Get( iAdapterIndex, iDisplayIndex, &iColorCaps, &iValidBits);
  
                 // Use only the valid bits from iColorCaps
                 iColorCaps &= iValidBits;
 
+                //每次刷新色彩为原来的一半
                 // Check if the display supports this particular capability
                 if ( ADL_DISPLAY_COLOR_BRIGHTNESS & iColorCaps )
                 {

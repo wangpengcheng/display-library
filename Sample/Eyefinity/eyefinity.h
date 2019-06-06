@@ -14,29 +14,32 @@
 #include <vector>
 
 using std::vector;
-
+// 示例结构
 typedef struct _SimpleRectStruct {
 
-	int iXOffset;
-	int iYOffset;
-	int iWidth;
-	int iHeight;
+	int iXOffset;//x偏移
+	int iYOffset;//y偏移
+	int iWidth;//宽度
+	int iHeight;//高度
 
 } SimpleRectStruct;
-
+//eyefinity结构体
 typedef struct _EyefinityInfoStruct {
 
 	int iSLSActive; // Indicates if Eyefinity is active for the operating system display
 					// index passed into atiEyefinityGetConfigInfo(). 1 if enabled and 0 if disabled.
+                    // 是否可用
 
 	int iSLSGridWidth;  // Contains width of the multi-monitor grid that makes up the Eyefinity Single Large Surface.
 					    // For example, a 3 display wide by 2 high Eyefinity setup will return 3 for this entry.
+                        // 网格宽度
 	int iSLSGridHeight; // Contains height of the multi-monitor grid that makes up the Eyefinity Single Large Surface.
 						// For example, a 3 display wide by 2 high Eyefinity setup will return 2 for this entry.
-
+                        // 网格高度
 	int iSLSWidth;  // Contains width in pixels of the multi-monitor Single Large Surface. The value returned is
 	                // a function of the width of the SLS grid, of the horizontal resolution of each display, and
 	                // of whether or not bezel compensation is enabled.
+                    //  SLS grid
 	int iSLSHeight; // Contains height in pixels of the multi-monitor Single Large Surface. The value returned is
 	                // a function of the height of the SLS grid, of the vertical resolution of each display, and
 	                // of whether or not bezel compensation is enabled.
@@ -45,23 +48,26 @@ typedef struct _EyefinityInfoStruct {
 	                              // 1 if enabled, and 0 if disabled.
 
 } EyefinityInfoStruct;
-
+//显示信息结构体
 typedef struct _DisplayInfoStruct {
 
 	int iGridXCoord; // Contains horizontal SLS grid coordinate of the display. The value is zero based with
 	                 // increasing values from left to right of the overall SLS grid. For example, the left-most
 	                 // display of a 3x2 Eyefinity setup will have the value 0, and the right-most will have
 	                 // the value 2.
+                     // x坐标 
 	int iGridYCoord; // Contains vertical SLS grid coordinate of the display. The value is zero based with
 	                 // increasing values from top to bottom of the overall SLS grid. For example, the top
 	                 // display of a 3x2 Eyefinity setup will have the value 0, and the bottom will have the
 	                 // value 1.
+                     // y坐标 
 
 	SimpleRectStruct displayRect;        // Contains the base offset and dimensions in pixels of the SLS rendering
 	                                     // area associated with this display. If bezel compensation is enabled, this
 	                                     // area will be larger than what the display can natively present to account
 	                                     // for bezel area. If bezel compensation is disabled, this area will be equal
 	                                     // to what the display can support natively. 
+                                         // 显示的位置 
 
 	SimpleRectStruct displayRectVisible; // Contains the base offset and dimensions in pixels of the SLS rendering area
 	                                     // associated with this display that is visible to the end user. If bezel
@@ -72,6 +78,7 @@ typedef struct _DisplayInfoStruct {
 	                                     // Developers wishing to place UI, HUD, or other game assets on a given display
 	                                     // so that it is visible and accessible to end users need to locate them inside
 	                                     // of the region defined by this rect.
+                                         // 可显示的位置 
 
 	int iPreferredDisplay; // Indicates whether or not this display is the preferred one for rendering of
 	                       // game HUD and UI elements. Only one display out of the whole SLS grid will have
@@ -79,36 +86,37 @@ typedef struct _DisplayInfoStruct {
 	                       // to place specific UI, HUD, or other game assets on a given display so that it
 	                       // is visible and accessible to end users need to locate them inside of the region
 	                       // defined by this rect.
+                           //  
 
 } DisplayInfoStruct;
-
+//绘制显示
 class TopologyDisplay
 {
 private:
-    ADLDisplayID DisplayID_;
+    ADLDisplayID DisplayID_;//显示id
     
     // Angle, relative to desktop
-    int Angle_;
+    int Angle_;//相对桌面的旋转角度
 
     // Size
-    int Width_;
-    int Height_;
+    int Width_;//宽度
+    int Height_;//高度
 
     // Position relative to the Desktop
-    int Left_;
-    int Top_;
+    int Left_;//相对桌面的定位，左
+    int Top_;//相对定位顶部
 
     //TODO: position in the SLS grid (row/column; 0-based)
-    int Row_;
+    int Row_;//相对位置坐标
     int Col_;
 
     // the badge ID is a number that allows a single monitor/display to be identified to user
-    int BadgeID_;
+    int BadgeID_;//边缘Id
 
 public:
     // Default c-tor
     TopologyDisplay() :
-        DisplayID_(),
+        DisplayID_(),//默认构造函数
         Angle_(0),
         Width_(0),
         Height_(0),
@@ -146,6 +154,7 @@ public:
     }
 
     // Copy c-tor
+    // 拷贝构造函数
     TopologyDisplay(const TopologyDisplay& other_) :
         DisplayID_(other_.DisplayID_),
         Angle_(other_.Angle_),
@@ -165,6 +174,7 @@ public:
     }
 
     // move c-tor
+    // 移动复制函数
     TopologyDisplay(TopologyDisplay&& other_) :
         DisplayID_(other_.DisplayID_),
         Angle_(other_.Angle_),
@@ -179,6 +189,7 @@ public:
     }
 
     // Copy assign operator
+    // 赋值拷贝函数
     TopologyDisplay operator= (const TopologyDisplay& other_)
     {
         if (this != &other_)
@@ -198,6 +209,7 @@ public:
     }
 
     // Move assign operator
+    // 赋值移动函数
     TopologyDisplay operator= (const TopologyDisplay&& other_)
     {
         if (this != &other_)
@@ -248,12 +260,12 @@ public:
 //                     the value can be queried using the EnumDisplayDevices() API.
 //
 // Output params
-// 	 pEyefinitiInfo       � This is a pointer to a EyefinitiInfoStruct structure that contains system Eyefinity
+// 	 pEyefinitiInfo       – This is a pointer to a EyefinitiInfoStruct structure that contains system Eyefinity
 //                          configuration information.
-//   lpNumDisplaysInfo    � Pointer to the number of DisplayInfoStruct structures stored in the returned
+//   lpNumDisplaysInfo    – Pointer to the number of DisplayInfoStruct structures stored in the returned
 //                          lppDisplayInfoStruct array. The value returned is equal to the number of displays
 //                          used for the Eyefinity setup. 
-//   lppDisplayInfoStruct � Pointer to an array of DisplayInfoStruct structures that contains per display
+//   lppDisplayInfoStruct – Pointer to an array of DisplayInfoStruct structures that contains per display
 //                          Eyefinity configuration information.
 //
 // Return code

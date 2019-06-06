@@ -113,7 +113,7 @@ int fopen_s ( FILE ** file, const char *filename, const char *mode )
 #if defined (LINUX)
     void *hDLL;		// Handle to .so library
 #else
-    HINSTANCE hDLL;		// Handle to DLL //获取dll句柄
+    HINSTANCE hDLL;		// Handle to DLL //获取dll句柄，dll全局变量
 #endif
 
     LPAdapterInfo     lpAdapterInfo = NULL; //窗口
@@ -235,6 +235,7 @@ int main( int argc, char *argv[] )
 			file = stdout;
 	}
 	// Generate pattern
+	// 通用选项
 	else if ( 0 == strcmp (argv[ 1] , "gen" ) )
 	{
 		command = GENERATE;
@@ -247,19 +248,22 @@ int main( int argc, char *argv[] )
 			}
 		}
 		else
-			file = stdout;
+			file = stdout;//输出文件
 	}
 	// Set mode according to the settings in a text file
+	// 根据txt文件设置模式
 	else if ( 0 == strcmp (argv[ 1] , "set" ) )
 	{
 		command = SETMODE;
 		if ( argc < 3 )
 		{
+			//显示错误并且中断
 			DisplayErrorAndPause( "ERROR: The 'set' command requires a filename\n" );
 			return 0;
 		}
 		else
 		{
+			//打开相关文件
 			if ( fopen_s( &file, argv[ 2 ],"r") )
 			{
 				printf( "Error openning file %s!\n", argv[2] );
@@ -268,6 +272,7 @@ int main( int argc, char *argv[] )
 		}
 	}
 	// Set Override mode according to the settings in a text file
+	// 根据文件设置重载模式
 	else if ( 0 == strcmp (argv[ 1] , "over" ) )
 	{
 		command = SETOVER;
@@ -286,6 +291,7 @@ int main( int argc, char *argv[] )
 		}
 	}
 	// Retrieves all modes from the system across multiple GPUs
+	// 通过多个GPU从系统中检索所有模式
 	else 	if ( 0 == strcmp (argv[ 1] , "all" ) )
 	{
 		command = GETALL;
@@ -302,6 +308,7 @@ int main( int argc, char *argv[] )
 	}
 	else 	if ( 0 == strcmp (argv[ 1] , "bios" ) )
 	{
+		//bios信息
 		command = BIOSINFO;
 		if ( 3 == argc )
 		{
@@ -316,17 +323,22 @@ int main( int argc, char *argv[] )
 	}
 	else
 	{
+		//输入错误，显示帮助信息
 			printf( "\nERROR: Unrecognized command!\n" );
 			ShowHelp();
 			return 0;
 	}
-
+			//打开ADL
 			ADL_Err = OpenADL();
 			// Error during ADL initialization?
+			// 初始化并且获取各种函数
+			// 
 			if (ADL_OK != ADL_Err )
   					return DisplayErrorAndPause( "ERROR: ADL Initialization error!" );
 			// Get the function pointers from ADL:
+			// 获取函数指针
 			ADL_Display_Modes_Get = (ADL_DISPLAY_MODES_GET)GetProcAddress(hDLL,"ADL_Display_Modes_Get");
+			//获取显示模式函数
 			if ( NULL == ADL_Display_Modes_Get )
 		  			return DisplayErrorAndPause( "ERROR: ADL_Display_Modes_Get not available!" );
 			ADL_Display_Modes_Set = (ADL_DISPLAY_MODES_SET)GetProcAddress(hDLL,"ADL_Display_Modes_Set");
@@ -357,14 +369,22 @@ int main( int argc, char *argv[] )
 			if ( NULL == ADL_Adapter_VideoBiosInfo_Get )
 		  			return DisplayErrorAndPause( "ERROR: ADL_Adapter_VideoBiosInfo_Get not available!" );
 
-
+		//获取信息模式
 		if ( GETALL == command )
 		{
+			//获取显示模式函数
 				ADL_Err = ADL_Display_Modes_Get ( -1, -1, &iNumModes, &lpADLMode );
+				/*
+				[in] 	iAdapterIndex 	The ADL index handle of the desired adapter. A value of -1 retrieves all modes for the system across multiple GPUs.
+				[in] 	iDisplayIndex 	The desired display index. If the index is -1, this field is ignored.
+				[out] 	lpNumModes 	The pointer to the number of modes retrieved.
+				[out] 	lppModes 	The pointer to the pointer to the retrieved display modes. Refer to the Display ADLMode structure for more information.
+				 */
 				if ( lpADLMode )
 				{
 					for ( i = 0; i < iNumModes; i++ )
 					{
+						//将信息加载到文件
 						ADL_Err = AdlModeToFile( &lpADLMode[ i ] );
 					}
 				}
@@ -373,12 +393,13 @@ int main( int argc, char *argv[] )
 				CloseADL();
 				return ADL_Err;
 		}
-
+		//设置命令模式
 		if ( SETMODE == command )
 		{
 			iNumModes = 1;
+			//从文件中加载模型
 			ADL_Err = AdlModeFromFile( &adlmode );
-
+			//文件读取错误，输出错误信息
 			if ( ADL_OK != ADL_Err )
 			{
 				if ( 0 < ADL_Err )
@@ -398,9 +419,10 @@ int main( int argc, char *argv[] )
 			CloseADL();
 			return ADL_Err;
 		}
-
+		//设置显示模式
 		if ( SETOVER == command )
 		{
+				//从文件中获取显示模型信息
 				ADL_Err = AdlDisplayModeInfoFromFile( &iAdapterIndex, &iDisplayIndex, &AdlDmi );
 				if ( ADL_OK != ADL_Err )
 				{
@@ -412,7 +434,7 @@ int main( int argc, char *argv[] )
 					CloseADL();
 					return ADL_ERR;
 				}
-
+				//设置显示刷新模式
 				ADL_Err = ADL_Display_ModeTimingOverride_Set( iAdapterIndex, iDisplayIndex,  &AdlDmi, 1 );
 				if ( ADL_OK != ADL_Err )
 					DisplayErrorAndPause( "ERROR: ADL_Display_ModeTimingOverride_Set() failed!" );
@@ -420,7 +442,7 @@ int main( int argc, char *argv[] )
 				CloseADL();
 				return ADL_Err;
 		}
-
+		//获取刷新信息
 		if ( INFOOVER == command )
 		{
 				ADL_Err = AdlModeFromFile( &adlmode );
@@ -434,14 +456,16 @@ int main( int argc, char *argv[] )
 				}
 				else
 				{
-					AdlDM.iPelsHeight = adlmode.iYRes;
-					AdlDM.iPelsWidth = adlmode.iXRes;
-					AdlDM.iBitsPerPel = adlmode.iColourDepth;
-					AdlDM.iDisplayFrequency = (int)adlmode.fRefreshRate;
+					AdlDM.iPelsHeight = adlmode.iYRes;//y高度
+					AdlDM.iPelsWidth = adlmode.iXRes;//x宽度
+					AdlDM.iBitsPerPel = adlmode.iColourDepth;//色彩深度
+					AdlDM.iDisplayFrequency = (int)adlmode.fRefreshRate; //刷新频率
+
 					ADL_Err = ADL_Display_ModeTimingOverride_Get( adlmode.iAdapterIndex, adlmode.displayID.iDisplayLogicalIndex,  &AdlDM, &AdlDmi );
 					if ( ADL_OK != ADL_Err )
 						DisplayErrorAndPause( "ERROR: ADL_Display_ModeTimingOverride_Get() failed!" );
 					else
+						//将信息存储到文件中
 						AdlDisplayModeInfoToFile( file2, adlmode.iAdapterIndex, adlmode.displayID.iDisplayLogicalIndex, &AdlDmi );
 				}
 				CloseADL();
@@ -449,14 +473,18 @@ int main( int argc, char *argv[] )
 		}
 
 		// Obtain the number of adapters for the system
+		// 获取转接器数目
         ADL_Adapter_NumberOfAdapters_Get ( &iNumberAdapters );
 
         if ( 0 < iNumberAdapters )
         {
+        	//分配内存，存储转接器信息
             lpAdapterInfo = malloc ( sizeof (AdapterInfo) * iNumberAdapters );
+            //设置初始化
             memset ( lpAdapterInfo,'\0', sizeof (AdapterInfo) * iNumberAdapters );
 
             // Get the AdapterInfo structure for all adapters in the system
+            //获取转接器的所有信息
             ADL_Adapter_AdapterInfo_Get (lpAdapterInfo, sizeof (AdapterInfo) * iNumberAdapters);
         }
 		else
@@ -467,17 +495,19 @@ int main( int argc, char *argv[] )
 		}
 
         // Repeat for all available adapters in the system
+        // 获取所有转接器信息
         for ( i = 0; i < iNumberAdapters; i++ )
         {
+        		//获取转接器编号
 				iAdapterIndex = lpAdapterInfo[ i ].iAdapterIndex;
-
+				//he function is used to check if the adapter associated with iAdapterIndex is active. Logic is different for Windows and Linux!
 				ADL_Err = ADL_Adapter_Active_Get ( iAdapterIndex, &iActive );
 				// If the adapter is not active skip the steps below.
 				if ( 0 == iActive || ADL_OK != ADL_Err)
 					continue;
-
+				//释放显示指针信息
 				ADL_Main_Memory_Free ( (void **)&lpAdlDisplayInfo );
-
+				//获取显示信息
 				ADL_Err = ADL_Display_DisplayInfo_Get (iAdapterIndex, &iNumDisplays, &lpAdlDisplayInfo, 1);
 
 				if (ADL_OK != ADL_Err)
@@ -492,6 +522,7 @@ int main( int argc, char *argv[] )
 							continue;   // Skip the not connected or not mapped displays
 
 						// Is the display mapped to this adapter?
+						// 判断显示是否连接到转换器接口
 						if ( iAdapterIndex != lpAdlDisplayInfo[ j ].displayID.iDisplayLogicalAdapterIndex )
 							continue;
 
@@ -500,11 +531,13 @@ int main( int argc, char *argv[] )
 						if ( BIOSINFO == command )
 						{
 								// Obtain the ASIC Bios Info
+								// 获取BIos信息
 								ADL_Err = ADL_Adapter_VideoBiosInfo_Get ( iAdapterIndex, &AdlBI );
 								if ( ADL_OK != ADL_Err )
 									DisplayErrorAndPause( "ERROR: ADL_Adapter_VideoBiosInfo_Get() failed!" );
 								else
 								{
+									//将信息存储到文件
 									ADL_Err = AdlBiosInfoToFile( iAdapterIndex, iDisplayIndex, &AdlBI );
 									if ( ADL_OK != ADL_Err )
 										DisplayErrorAndPause( "ERROR: Cannot save data to file!" );
@@ -528,14 +561,16 @@ int main( int argc, char *argv[] )
 										DisplayErrorAndPause( "ERROR: Cannot save data to file!" );
 								}
 						}
-
+						//获取列表信息
 						if ( GETLIST == command )
 						{
+								//分配内存
 								lpModeInfoList = malloc ( sizeof (ADLDisplayModeInfo) * iMaxNumOfOverrides );
+								//设置初始值
 								memset ( lpModeInfoList, '\0', sizeof (ADLDisplayModeInfo) * iMaxNumOfOverrides );
-
+								//获取刷新信息
 								ADL_Err = ADL_Display_ModeTimingOverrideList_Get( iAdapterIndex, iDisplayIndex,
-																														iMaxNumOfOverrides, lpModeInfoList, &lpNumOfOverrides);
+																				 iMaxNumOfOverrides, lpModeInfoList, &lpNumOfOverrides);
 								if ( ADL_OK != ADL_Err )
 									DisplayErrorAndPause( "ERROR: ADL_Display_ModeTimingOverrideList_Get() failed!" );
 								else
@@ -548,9 +583,10 @@ int main( int argc, char *argv[] )
 												ADL_Err = AdlDisplayModeInfoToFile( file, iAdapterIndex, iDisplayIndex, &lpModeInfoList[ k ] );
 										}
 								}
+								//释放内存
 							   ADL_Main_Memory_Free ( (void **)&lpModeInfoList );
 						}
-
+						//
 						if ( GENERATE == command )
 						{
 							ADL_Err = ADL_Display_Modes_Get ( iAdapterIndex, iDisplayIndex, &iNumModes, &lpADLMode );
@@ -572,12 +608,13 @@ int main( int argc, char *argv[] )
 		CloseADL();
 		return 0;
 }
-
+//将模式添加到文件中
 int AdlModeToFile( LPADLMode lpADLMode )
 {
+	//指针未空指直接返回
 	if ( NULL == file || NULL == lpADLMode )
 		return ADL_ERR_NULL_POINTER;
-
+	//输出相关信息
 	fprintf( file, "%-15s %d\n", "AdapterIndex", lpADLMode->iAdapterIndex );
 	fprintf( file, "%-15s %d\n", "DisplayIndex", lpADLMode->displayID.iDisplayLogicalIndex);
 	fprintf( file, "%-15s %d\n", "Width", lpADLMode->iXRes);
@@ -593,7 +630,7 @@ int AdlModeToFile( LPADLMode lpADLMode )
 
 	return ADL_OK;
 }
-
+//从文件中加载配置
 int AdlModeFromFile( LPADLMode  lpADLMode )
 {
 	int iValue;
@@ -665,7 +702,7 @@ int AdlModeFromFile( LPADLMode  lpADLMode )
 
 	return ADL_OK;
 }
-
+//将模型信息，添加到文件
 int AdlDisplayModeInfoToFile( FILE * file, int iAdapterIdx, int iDisplayIdx, ADLDisplayModeInfo * lpModeInfoList )
 {
 	if ( NULL == file || NULL == lpModeInfoList )
@@ -698,7 +735,7 @@ int AdlDisplayModeInfoToFile( FILE * file, int iAdapterIdx, int iDisplayIdx, ADL
 
 	return ADL_OK;
 }
-
+//从文件中提取相关信息
 int AdlDisplayModeInfoFromFile( int * lpAdapterIdx, int * lpDisplayIdx, ADLDisplayModeInfo * lpModeInfoList )
 {
 	int iValue;
@@ -824,20 +861,24 @@ int AdlDisplayModeInfoFromFile( int * lpAdapterIdx, int * lpDisplayIdx, ADLDispl
 */
 	return ADL_OK;
 }
-
+//获取值
 int GetValue(  char * name, int * iValue, int line )
 {
+	//设置file ld
 	char sField[ 256 ];
+	//获取文件相关信息
 	fscanf_s( file,"%32s %d\n", sField, 33, iValue);
+	//如果获取的值和名称不相符合直接退出
 	if ( 0 == strcmp( sField, name ) )
 		return ADL_OK;
 	else
 	{
+		//输出相关信息
 		sprintf_s( err, sErr, "Expected     : %s \nActual       : %s \nIn line      : %d", name, sField, line );
 		return ADL_ERR;
 	}
 }
-
+//获取分辨率
 int GetHex(  char * name, int * iValue, int line )
 {
 	char sField[ 256 ];

@@ -2180,7 +2180,7 @@ typedef struct _ADLECCData
 ///  Clients have to pass the handle to each subsequent ADL call and finally destroy
 ///  the context with call to \ref ADL2_Main_Control_Destroy
 /// \nosubgrouping
-typedef void *ADL_CONTEXT_HANDLE;
+typedef void *ADL_CONTEXT_HANDLE;//ADL上下文空指针
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Structure containing the display mode definition used per controller.
